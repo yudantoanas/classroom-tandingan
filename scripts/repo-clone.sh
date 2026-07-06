@@ -67,14 +67,45 @@ for ITEM in "${TEMPLATES[@]}"; do
     done
 done
 
+# Create local output folder and files
+echo ""
+echo "Generating todo.md and review.md files..."
+
+# Generate todo.md
+{
+    echo "# Todo - Grading:"
+    echo ""
+    for USER in "${USERS[@]}"; do
+        echo "[ ] $USER"
+    done
+} > cloned/output/todo.md
+
+# Generate review.md
+{
+    for USER in "${USERS[@]}"; do
+        echo "# $USER"
+        echo ""
+        echo "## Review"
+        echo ""
+        echo "## Point Penting"
+        echo ""
+        echo "## What can be Improved?"
+        echo ""
+        echo "==="
+        echo ""
+    done
+} > cloned/output/review.md
+
+echo ""
+echo "All tasks completed!"
 echo ""
 echo "=========================================="
 echo "Summary"
 echo "=========================================="
-echo "Total Repositories Processed: $((CLONED_COUNT + SKIPPED_COUNT + FAILED_COUNT))"
-echo "Cloned: $CLONED_COUNT"
+echo "Total  : $((CLONED_COUNT + SKIPPED_COUNT + FAILED_COUNT))"
+echo "Cloned : $CLONED_COUNT"
 echo "Skipped: $SKIPPED_COUNT"
-echo "Failed: $FAILED_COUNT"
+echo "Failed : $FAILED_COUNT"
 echo "------------------------------------------"
 
 if [ ${#CLONED_LIST[@]} -gt 0 ]; then
