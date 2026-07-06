@@ -93,3 +93,43 @@ The generated repository name follows the pattern:
    chmod +x scripts/repo-create.sh
    ./scripts/repo-create.sh
    ```
+
+---
+
+### 3. `scripts/repo-check.sh` (Repository Existence Checking)
+
+Checks whether each expected repository for the batch and list of users has been created.
+
+#### How to Configure & Use
+
+1. Open `scripts/repo-check.sh` and configure:
+   - `USERS`: Array of student GitHub usernames.
+   - `BATCH_NAME`: The batch identifier used in repo names.
+   - `TEMPLATES`: Array of template repos formatted as `"org/repo"`.
+1. Run the script:
+
+   ```bash
+   chmod +x scripts/repo-check.sh
+   ./scripts/repo-check.sh
+   ```
+
+---
+
+### 4. `scripts/repo-clone.sh` (Repository Bulk Cloning)
+
+Clones the student repositories for the configured batch and user list into a local `cloned/output/` directory.
+
+#### How to Configure & Use
+
+1. Open `scripts/repo-clone.sh` and configure:
+   - `USERS`: Array of student GitHub usernames.
+   - `BATCH_NAME`: The batch identifier used in repo names.
+   - `TEMPLATES`: Array of template repos formatted as `"org/repo"`.
+1. Run the script:
+
+   ```bash
+   chmod +x scripts/repo-clone.sh
+   ./scripts/repo-clone.sh
+   ```
+
+   All repositories will be cloned into `./output/<repo-name>-<batch-name>-<user>`. Existing directories will be skipped.
