@@ -150,6 +150,7 @@ Clones the student repositories for the configured batch and user list into a lo
 * `TEMPLATES` (ignores the deadline portion automatically)
 
 #### Capabilities
+
 * **Bulk Cloning**: Clones all student repositories to `cloned/output/<repo-name>-<batch-name>-<user>`.
 * **Grading Templates Generation**: Automatically creates:
   * `cloned/output/todo.md`: A checklist of all student usernames to track grading progress.
