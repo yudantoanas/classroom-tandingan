@@ -3,30 +3,26 @@
 # ==========================================
 # GitHub Organization Invitation Script
 # ==========================================
-# Please configure the variables below before running the script.
 
-# Array of GitHub usernames to invite
-# Separate with spaces
-USERS=(
-    "userA"
-)
-
-# Organization name
-ORG="classroom-trial-101"
-
-# Team name to add invited users to (required)
-TEAM_NAME="Batch-001"
-
-# ==========================================
+# Locate and source .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../.env" ]; then
+    source "$SCRIPT_DIR/../.env"
+elif [ -f "./.env" ]; then
+    source "./.env"
+else
+    echo "Error: .env file not found."
+    exit 1
+fi
 
 # Validate required configuration
 if [ -z "$ORG" ]; then
-    echo "Error: ORG is not set."
+    echo "Error: ORG is not set in .env."
     exit 1
 fi
 
 if [ -z "$TEAM_NAME" ]; then
-    echo "Error: TEAM_NAME is not set."
+    echo "Error: TEAM_NAME is not set in .env."
     exit 1
 fi
 

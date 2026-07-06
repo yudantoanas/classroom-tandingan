@@ -3,36 +3,23 @@
 # ==========================================
 # GitHub Repository Provisioning Script
 # ==========================================
-# Please configure the variables below before running the script.
 
-# Array of GitHub usernames
-# Separate with spaces
-USERS=(
-    "userA" 
-    "userB" 
-    "userC" 
-    "userD"
-)
-
-# Reviewers (Format: ("user1" "user2"))
-REVIEWERS=(
-    "reviewer1" 
-    "reviewer2"
-)
-
-# Batch Name for creating the repo (e.g., "Batch-001")
-BATCH_NAME="Batch-Dummy"
-
-# Template repositories and their respective deadlines
-# Format: "organization/repository|YYYY-MM-DD HH:MM"
-TEMPLATES=(
-    "orgName/templateRepo1|2026-12-31 23:59"
-    "orgName/templateRepo2|2026-12-31 23:59"
-)
-
-# ==========================================
+# Locate and source .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../.env" ]; then
+    source "$SCRIPT_DIR/../.env"
+elif [ -f "./.env" ]; then
+    source "./.env"
+else
+    echo "Error: .env file not found."
+    exit 1
+fi
 
 # Extract Organization from first template (assuming all in same org)
+if [ ${#TEMPLATES[@]} -eq 0 ]; then
+    echo "Error: TEMPLATES is empty or not set in .env."
+    exit 1
+fi
 ORG=$(echo "${TEMPLATES[0]}" | cut -d'/' -f1)
 
 

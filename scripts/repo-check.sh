@@ -3,28 +3,17 @@
 # ==========================================
 # GitHub Repository Existence Check Script
 # ==========================================
-# Please configure the variables below before running the script.
 
-# Array of GitHub usernames
-# Separate with spaces
-USERS=(
-    "userA" 
-    "userB" 
-    "userC" 
-    "userD"
-)
-
-# Batch Name for creating the repo (e.g., "Batch-001")
-BATCH_NAME="Batch-Dummy"
-
-# Template repositories
-# Format: "organization/repository"
-TEMPLATES=(
-    "orgName/templateRepo1"
-    "orgName/templateRepo2"
-)
-
-# ==========================================
+# Locate and source .env file
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../.env" ]; then
+    source "$SCRIPT_DIR/../.env"
+elif [ -f "./.env" ]; then
+    source "./.env"
+else
+    echo "Error: .env file not found."
+    exit 1
+fi
 
 echo "=========================================="
 echo "Starting Repository Existence Check"
@@ -37,9 +26,9 @@ NOT_CREATED_COUNT=0
 CREATED_LIST=()
 NOT_CREATED_LIST=()
 
-for TEMPLATE_REPO in "${TEMPLATES[@]}"; do
-    # Strip trailing commas if any
-    TEMPLATE_REPO=$(echo "$TEMPLATE_REPO" | sed 's/,$//')
+for ITEM in "${TEMPLATES[@]}"; do
+    # Extract Template Repo from ITEM (strip trailing commas if any)
+    TEMPLATE_REPO=$(echo "$ITEM" | cut -d'|' -f1 | sed 's/,$//')
 
     # Extract Organization and Base Repo Name from TEMPLATE_REPO
     ORG=$(echo "$TEMPLATE_REPO" | cut -d'/' -f1)
