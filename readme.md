@@ -19,24 +19,43 @@ Before running any script, make sure that:
 
 ## Setup & Configuration
 
-All configurations are centralized in a single `.env` file at the root. You do not need to edit individual scripts.
+Configurations are modularized by **Phase**, **Track (HCK / RMT)**, and **Set (Set 1 / Set 2)**:
 
-1. **Copy the example configuration file:**
+### Preset Configuration Files
 
-   ```bash
-   cp .env.example .env
-   ```
+| Phase | Campus (HCK) | Remote (RMT) |
+| :--- | :--- | :--- |
+| **Phase 0** | `.env.P0-HCK-Set-1`<br>`.env.P0-HCK-Set-2` | `.env.P0-RMT-Set-1`<br>`.env.P0-RMT-Set-2` |
+| **Phase 1** | `.env.P1-HCK-Set-1`<br>`.env.P1-HCK-Set-2` | `.env.P1-RMT-Set-1`<br>`.env.P1-RMT-Set-2` |
+| **Phase 2** | `.env.P2-HCK-Set-1` | `.env.P2-RMT-Set-1` |
 
-1. **Open `.env` and fill in your values.**
+> [!NOTE]
+> A fallback `.env` file at the root can still be used if no arguments are passed.
 
 ### Configuration Variables Reference
 
 * **`ORG`**: The target GitHub organization name (e.g. `"FTDS-Assignment-Bay-2"`).
-* **`BATCH_NAME`**: The batch/class identifier used in repo names (e.g. `"FTDS-043-HCK"`).
+* **`BATCH_NAME`**: The batch/class identifier used in repo names (e.g. `"FTDS-044-HCK"`).
 * **`TEAM_NAME`**: The target GitHub Team name inside the organization to add students to.
 * **`USERS`**: Array of student GitHub usernames.
 * **`REVIEWERS`**: Array of reviewer/instructor GitHub usernames.
-* **`TEMPLATES`**: Array of template repositories and optional deadlines formatted as `"organization/repository|YYYY-MM-DD HH:MM"` (e.g. `"org/P0-GitHub-Starter|2026-12-31 23:59"`).
+* **`TEMPLATES`**: Array of template repositories and optional deadlines formatted as `"organization/repository|YYYY-MM-DD HH:MM"` (e.g. `"org/P1-GC1-Set-1|2026-08-11 23:59 WIB"`).
+
+---
+
+## Running Scripts (CLI Arguments)
+
+All scripts support passing **Phase-Track** and **Set Number** as command-line arguments:
+
+```bash
+# Syntax: ./scripts/<script-name>.sh <PHASE-TRACK> [SET_NUMBER]
+
+# Examples:
+./scripts/repo-create.sh P1-HCK 2      # Loads .env.P1-HCK-Set-2
+./scripts/repo-create.sh P0-RMT 1      # Loads .env.P0-RMT-Set-1
+./scripts/repo-create.sh P2-HCK        # Loads .env.P2-HCK-Set-1 (Set defaults to 1)
+./scripts/repo-create.sh               # Loads root .env fallback
+```
 
 ---
 
@@ -49,7 +68,7 @@ Invites students to the organization and registers them under a specific team.
 > [!NOTE]
 > Students must accept their organization invitations before they can be assigned repository permissions in the next step.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `ORG`
 * `TEAM_NAME`
@@ -64,11 +83,9 @@ Invites students to the organization and registers them under a specific team.
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/invite.sh
-./scripts/invite.sh
+./scripts/invite.sh P1-HCK 2
 ```
 
 ---
@@ -77,7 +94,7 @@ chmod +x scripts/invite.sh
 
 Creates private student repositories from templates and configures grading/deadline workflows.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `REVIEWERS`
@@ -87,7 +104,6 @@ Creates private student repositories from templates and configures grading/deadl
 #### Capabilities
 
 * **Bulk Provisioning**: Generates a private repository for each student from each specified template.
-
 * **Milestone & Issue Creation**: Converts local deadline inputs (Asia/Jakarta timezone) into ISO 8601 UTC and creates an "Assignment Deadline" milestone and reminder issue.
 * **Collaborator Access**:
   * Assigns `write` access to the student.
@@ -105,15 +121,13 @@ The generated repository name follows the pattern:
 <REPO_NAME>-<BATCH_NAME>-<USERNAME>
 ```
 
-*Example:* For template `org/P0-GitHub-Starter`, batch `FTDS-043-HCK`, and student `userA`, the repo name will be `P0-GitHub-Starter-FTDS-043-HCK-userA`.
+*Example:* For template `org/P1-GC1-Set-2`, batch `FTDS-044-HCK`, and student `userA`, the repo name will be `P1-GC1-Set-2-FTDS-044-HCK-userA`.
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-create.sh
-./scripts/repo-create.sh
+./scripts/repo-create.sh P1-HCK 2
 ```
 
 ---
@@ -122,7 +136,7 @@ chmod +x scripts/repo-create.sh
 
 Checks whether each expected repository for the batch and list of users has been created.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `BATCH_NAME`
@@ -130,11 +144,9 @@ Checks whether each expected repository for the batch and list of users has been
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-check.sh
-./scripts/repo-check.sh
+./scripts/repo-check.sh P1-HCK 2
 ```
 
 ---
@@ -143,7 +155,7 @@ chmod +x scripts/repo-check.sh
 
 Clones the student repositories for the configured batch and user list into a local `cloned/output/` directory.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `BATCH_NAME`
@@ -158,11 +170,9 @@ Clones the student repositories for the configured batch and user list into a lo
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-clone.sh
-./scripts/repo-clone.sh
+./scripts/repo-clone.sh P1-HCK 2
 ```
 
 All repositories will be cloned into `./cloned/output/<repo-name>-<batch-name>-<user>`. Existing directories will be skipped.
