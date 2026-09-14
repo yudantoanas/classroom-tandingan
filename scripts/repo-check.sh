@@ -22,7 +22,7 @@ fi
 
 ENV_PATH=""
 if [ -n "$TARGET_CONF" ]; then
-    # Try with set suffix if provided: e.g. P0-HCK + Set-1 -> .env.P0-HCK-Set-1
+    # Try with set suffix if provided: e.g. cohort-a + Set-1 -> .env.cohort-a-Set-1
     if [ -n "$SET_SUFFIX" ]; then
         CANDIDATES=(
             "$TARGET_CONF-$SET_SUFFIX"
