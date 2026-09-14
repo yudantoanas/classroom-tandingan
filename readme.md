@@ -1,8 +1,11 @@
-# GitHub "Classroom" Initializer
+# Classroom Tandingan: GitHub Classroom Automation CLI
 
-This is an automation tool designed to initialize a classroom environment on GitHub. It invites students to an organization and sets up individual student repositories from template repositories, including milestones, deadline reminders, and feedback/grading workflows.
+This is an open-source automation tool designed to manage classroom and cohort environments on GitHub. Built directly on top of the **GitHub CLI (`gh`)**, it streamlines the entire assignment lifecycle: inviting students to an organization, provisioning private student repositories from template repositories, setting deadlines, milestones, reviewer access, generating automated feedback pull requests, validating setup, and bulk cloning repositories with grading checklists.
 
-These scripts leverage the **GitHub CLI (`gh`)**. Make sure you have it installed and authenticated with your GitHub account. For installation details, see [GitHub CLI Installation](https://github.com/cli/cli#installation).
+For installation details of the required GitHub CLI, see [GitHub CLI Installation](https://github.com/cli/cli#installation).
+
+> [!TIP]
+> Looking for a complete, step-by-step walkthrough of the cohort lifecycle? See the [End-to-End Guide](docs/end-to-end-guide.md) with Mermaid workflow diagrams, sequence charts, and troubleshooting tips.
 
 ---
 
@@ -10,33 +13,71 @@ These scripts leverage the **GitHub CLI (`gh`)**. Make sure you have it installe
 
 Before running any script, make sure that:
 
-1. **GitHub CLI (`gh`)** is installed, authenticated, and has sufficient organization/repository scopes.
-1. The target **GitHub Organization** exists and you have administrator/owner permissions.
-1. The specified GitHub usernames (students and reviewers) are valid.
-1. **Template Repositories** exist and are accessible.
+1. **GitHub CLI (`gh`)** is installed, authenticated, and has sufficient organization and repository scopes (`admin:org`, `repo`, `workflow`).
+2. The target **GitHub Organization** exists and you have administrator or owner permissions.
+3. The specified GitHub usernames (students and reviewers) are valid GitHub accounts.
+4. **Template Repositories** exist, are marked as template repositories on GitHub, and are accessible.
+
+---
+
+## Repository Structure
+
+```
+├── .agents/
+│   └── skills/               # Installed agent skills (caveman, grill-me)
+├── docs/
+│   └── end-to-end-guide.md   # Complete cohort lifecycle guide & walkthrough
+├── scripts/
+│   ├── invite.sh             # Step 1: Org invitations & team assignment
+│   ├── repo-create.sh        # Step 2: Bulk student repo provisioning & feedback PR setup
+│   ├── repo-check.sh         # Step 3: Validation of created student repositories
+│   └── repo-clone.sh         # Step 4: Bulk clone to local cloned/output directory & checklist gen
+├── .env.example              # Reference template for configuration variables
+├── skills-lock.json          # Installed agent skills manifest and checksums
+├── AGENTS.md                 # Agent instructions and repository guardrails
+└── README.md                 # Project user guide and CLI documentation
+```
 
 ---
 
 ## Setup & Configuration
 
-All configurations are centralized in a single `.env` file at the root. You do not need to edit individual scripts.
+Configurations can be modularized by **Cohort**, **Class**, or **Assignment Set**.
 
-1. **Copy the example configuration file:**
+### Modular Configuration Files
 
-   ```bash
-   cp .env.example .env
-   ```
+You can create environment files matching your cohort naming convention:
 
-1. **Open `.env` and fill in your values.**
+* `.env.<COHORT_NAME>` (e.g. `.env.cohort-2026`, `.env.class-alpha`)
+* `.env.<COHORT_NAME>-Set-<NUMBER>` (e.g. `.env.cohort-2026-Set-1`, `.env.cohort-2026-Set-2`)
+
+> [!NOTE]
+> A fallback `.env` file at the root will be loaded if no arguments are passed. All `.env*` preset files are gitignored to prevent exposing student usernames.
 
 ### Configuration Variables Reference
 
-* **`ORG`**: The target GitHub organization name (e.g. `"FTDS-Assignment-Bay-2"`).
-* **`BATCH_NAME`**: The batch/class identifier used in repo names (e.g. `"FTDS-043-HCK"`).
+* **`ORG`**: The target GitHub organization name (e.g. `"octo-academy"`).
+* **`BATCH_NAME`**: The batch or class identifier used in repo names (e.g. `"cohort-2026"`).
 * **`TEAM_NAME`**: The target GitHub Team name inside the organization to add students to.
 * **`USERS`**: Array of student GitHub usernames.
 * **`REVIEWERS`**: Array of reviewer/instructor GitHub usernames.
-* **`TEMPLATES`**: Array of template repositories and optional deadlines formatted as `"organization/repository|YYYY-MM-DD HH:MM"` (e.g. `"org/P0-GitHub-Starter|2026-12-31 23:59"`).
+* **`TEMPLATES`**: Array of template repositories and optional deadlines formatted as `"organization/repository|YYYY-MM-DD HH:MM"` (e.g. `"octo-academy/assignment-1|2026-10-15 23:59"`).
+
+---
+
+## Running Scripts (CLI Arguments)
+
+All scripts support passing **Cohort Name** and optional **Set Number** as command-line arguments:
+
+```bash
+# Syntax: ./scripts/<script-name>.sh [COHORT_NAME] [SET_NUMBER]
+
+# Examples:
+./scripts/repo-create.sh cohort-2026 2    # Loads .env.cohort-2026-Set-2
+./scripts/repo-create.sh class-alpha 1    # Loads .env.class-alpha-Set-1
+./scripts/repo-create.sh cohort-2026      # Loads .env.cohort-2026-Set-1 or .env.cohort-2026
+./scripts/repo-create.sh                  # Loads root .env fallback
+```
 
 ---
 
@@ -47,9 +88,9 @@ All configurations are centralized in a single `.env` file at the root. You do n
 Invites students to the organization and registers them under a specific team.
 
 > [!NOTE]
-> Students must accept their organization invitations before they can be assigned repository permissions in the next step.
+> Students must accept their organization invitations before repository collaborator permissions can be bound cleanly in the next step.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `ORG`
 * `TEAM_NAME`
@@ -59,16 +100,13 @@ Invites students to the organization and registers them under a specific team.
 
 * Verifies if the specified GitHub Team exists within the Organization.
 * Automatically creates the Team with `secret` privacy if it does not exist.
-* Resolves GitHub usernames to internal user IDs.
 * Sends organization invitations to students with the `direct_member` role and adds them directly to the specified team.
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/invite.sh
-./scripts/invite.sh
+./scripts/invite.sh cohort-2026 1
 ```
 
 ---
@@ -77,7 +115,7 @@ chmod +x scripts/invite.sh
 
 Creates private student repositories from templates and configures grading/deadline workflows.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `REVIEWERS`
@@ -87,8 +125,7 @@ Creates private student repositories from templates and configures grading/deadl
 #### Capabilities
 
 * **Bulk Provisioning**: Generates a private repository for each student from each specified template.
-
-* **Milestone & Issue Creation**: Converts local deadline inputs (Asia/Jakarta timezone) into ISO 8601 UTC and creates an "Assignment Deadline" milestone and reminder issue.
+* **Milestone & Issue Creation**: Converts local deadline inputs into ISO 8601 UTC and creates an "Assignment Deadline" milestone and reminder issue.
 * **Collaborator Access**:
   * Assigns `write` access to the student.
   * Assigns `maintain` access to any specified `REVIEWERS` so they can view and review student code.
@@ -105,24 +142,22 @@ The generated repository name follows the pattern:
 <REPO_NAME>-<BATCH_NAME>-<USERNAME>
 ```
 
-*Example:* For template `org/P0-GitHub-Starter`, batch `FTDS-043-HCK`, and student `userA`, the repo name will be `P0-GitHub-Starter-FTDS-043-HCK-userA`.
+*Example:* For template `octo-academy/assignment-1`, batch `cohort-2026`, and student `studentA`, the repo name will be `assignment-1-cohort-2026-studentA`.
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-create.sh
-./scripts/repo-create.sh
+./scripts/repo-create.sh cohort-2026 1
 ```
 
 ---
 
-### 3. `scripts/repo-check.sh` (Repository Existence Checking)
+### 3. `scripts/repo-check.sh` (Step 3: Repository Existence Checking)
 
 Checks whether each expected repository for the batch and list of users has been created.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `BATCH_NAME`
@@ -130,20 +165,18 @@ Checks whether each expected repository for the batch and list of users has been
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-check.sh
-./scripts/repo-check.sh
+./scripts/repo-check.sh cohort-2026 1
 ```
 
 ---
 
-### 4. `scripts/repo-clone.sh` (Repository Bulk Cloning)
+### 4. `scripts/repo-clone.sh` (Step 4: Repository Bulk Cloning)
 
 Clones the student repositories for the configured batch and user list into a local `cloned/output/` directory.
 
-#### Required `.env` Variables
+#### Required Config Variables
 
 * `USERS`
 * `BATCH_NAME`
@@ -154,15 +187,13 @@ Clones the student repositories for the configured batch and user list into a lo
 * **Bulk Cloning**: Clones all student repositories to `cloned/output/<repo-name>-<batch-name>-<user>`.
 * **Grading Templates Generation**: Automatically creates:
   * `cloned/output/todo.md`: A checklist of all student usernames to track grading progress.
-  * `cloned/output/review.md`: A structured markdown file with review prompts (Review, Point Penting, and What can be Improved?) for each student username.
+  * `cloned/output/review.md`: A structured markdown file with review prompts (Review, Key Highlights, and What can be Improved?) for each student username.
 
 #### How to Use
 
-Run the script:
-
 ```bash
 chmod +x scripts/repo-clone.sh
-./scripts/repo-clone.sh
+./scripts/repo-clone.sh cohort-2026 1
 ```
 
 All repositories will be cloned into `./cloned/output/<repo-name>-<batch-name>-<user>`. Existing directories will be skipped.

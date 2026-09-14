@@ -6,7 +6,63 @@
 
 # Locate and source .env file
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -f "$SCRIPT_DIR/../.env" ]; then
+TARGET_CONF="${1:-}"
+SET_ARG="${2:-}"
+
+# Normalize set argument if passed as $2 (e.g. "1" -> "Set-1", "set-2" -> "Set-2", "Set-2" -> "Set-2")
+SET_SUFFIX=""
+if [ -n "$SET_ARG" ]; then
+    SET_NUM=$(echo "$SET_ARG" | grep -o '[0-9]\+')
+    if [ -n "$SET_NUM" ]; then
+        SET_SUFFIX="Set-$SET_NUM"
+    else
+        SET_SUFFIX="$SET_ARG"
+    fi
+fi
+
+ENV_PATH=""
+if [ -n "$TARGET_CONF" ]; then
+    # Try with set suffix if provided: e.g. cohort-a + Set-1 -> .env.cohort-a-Set-1
+    if [ -n "$SET_SUFFIX" ]; then
+        CANDIDATES=(
+            "$TARGET_CONF-$SET_SUFFIX"
+            "$SCRIPT_DIR/../$TARGET_CONF-$SET_SUFFIX"
+            "$SCRIPT_DIR/../.env.$TARGET_CONF-$SET_SUFFIX"
+            "./.env.$TARGET_CONF-$SET_SUFFIX"
+        )
+        for cand in "${CANDIDATES[@]}"; do
+            if [ -f "$cand" ]; then
+                ENV_PATH="$cand"
+                break
+            fi
+        done
+    fi
+
+    # Try direct name if no set or set candidate not found
+    if [ -z "$ENV_PATH" ]; then
+        CANDIDATES=(
+            "$TARGET_CONF"
+            "$SCRIPT_DIR/../$TARGET_CONF"
+            "$SCRIPT_DIR/../.env.$TARGET_CONF"
+            "./.env.$TARGET_CONF"
+            "$SCRIPT_DIR/../.env.$TARGET_CONF-Set-1"
+            "./.env.$TARGET_CONF-Set-1"
+        )
+        for cand in "${CANDIDATES[@]}"; do
+            if [ -f "$cand" ]; then
+                ENV_PATH="$cand"
+                break
+            fi
+        done
+    fi
+
+    if [ -n "$ENV_PATH" ]; then
+        source "$ENV_PATH"
+    else
+        echo "Error: Config file not found for '$TARGET_CONF' ${SET_SUFFIX:+with $SET_SUFFIX}."
+        exit 1
+    fi
+elif [ -f "$SCRIPT_DIR/../.env" ]; then
     source "$SCRIPT_DIR/../.env"
 elif [ -f "./.env" ]; then
     source "./.env"
@@ -22,7 +78,12 @@ if [ -z "$ORG" ]; then
 fi
 
 if [ -z "$TEAM_NAME" ]; then
-    echo "Error: TEAM_NAME is not set in .env."
+    echo "Error: TEAM_NAME is not set in config."
+    exit 1
+fi
+
+if [ ${#USERS[@]} -eq 0 ]; then
+    echo "Error: USERS is empty or not set in config."
     exit 1
 fi
 
@@ -35,43 +96,41 @@ echo "=========================================="
 # Step 1: Ensure the team exists
 # ------------------------------------------
 echo "Checking if team '$TEAM_NAME' exists in '$ORG'..."
-TEAM_ID=$(gh api "orgs/$ORG/teams/$TEAM_NAME" -q '.id' 2>/dev/null || true)
+TEAM_SLUG=$(gh api "orgs/$ORG/teams/$TEAM_NAME" -q '.slug' 2>/dev/null || true)
 
-if [[ "$TEAM_ID" =~ ^[0-9]+$ ]]; then
-    echo "Team '$TEAM_NAME' already exists (ID: $TEAM_ID)."
+if [ -n "$TEAM_SLUG" ] && [ "$TEAM_SLUG" != "null" ]; then
+    echo "Team '$TEAM_NAME' already exists (Slug: $TEAM_SLUG)."
 else
     echo "Team '$TEAM_NAME' does not exist. Creating it..."
-    TEAM_ID=$(gh api -X POST "orgs/$ORG/teams" \
+    TEAM_SLUG=$(gh api -X POST "orgs/$ORG/teams" \
         -f name="$TEAM_NAME" \
         -f privacy="secret" \
-        -q '.id' 2>/dev/null || true)
+        -q '.slug' 2>/dev/null || true)
 
-    if ! [[ "$TEAM_ID" =~ ^[0-9]+$ ]]; then
+    if [ -z "$TEAM_SLUG" ] || [ "$TEAM_SLUG" == "null" ]; then
         echo "Error: Failed to create team '$TEAM_NAME'. Aborting."
         exit 1
     fi
-    echo "Team '$TEAM_NAME' created successfully (ID: $TEAM_ID)."
+    echo "Team '$TEAM_NAME' created successfully (Slug: $TEAM_SLUG)."
 fi
 
 # ------------------------------------------
-# Step 2: Invite users to the org & team
+# Step 2: Add/Invite users to the team
 # ------------------------------------------
 for USER in "${USERS[@]}"; do
     echo "------------------------------------------"
-    echo "Inviting $USER to organization '$ORG'..."
+    echo "Adding/Inviting $USER to team '$TEAM_SLUG' in '$ORG'..."
 
-    USER_ID=$(gh api "users/$USER" -q '.id' 2>/dev/null)
-    if [ -z "$USER_ID" ]; then
-        echo "Error: Could not find GitHub user ID for '$USER'. Skipping."
-        continue
+    RESPONSE=$(gh api --method PUT "orgs/$ORG/teams/$TEAM_SLUG/memberships/$USER" \
+        -f role="member" 2>&1)
+
+    if [ $? -eq 0 ]; then
+        STATE=$(echo "$RESPONSE" | grep -o '"state": *"[^"]*"' | cut -d'"' -f4)
+        [ -z "$STATE" ] && STATE="active"
+        echo "Success: $USER membership status is '$STATE' (role: member)."
+    else
+        echo "Error adding $USER: $RESPONSE"
     fi
-
-    gh api -X POST "orgs/$ORG/invitations" \
-        -F invitee_id="$USER_ID" \
-        -f role="direct_member" \
-        -F "team_ids[]=$TEAM_ID" --silent \
-        && echo "Invitation sent to $USER (added to team '$TEAM_NAME')." \
-        || echo "Notice: $USER is likely already in the organization or invitation is pending."
 done
 
 echo "=========================================="

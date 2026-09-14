@@ -1,4 +1,12 @@
-.env
+.env.*
+!.env.example
 cloned/
 output/
 runner_*.sh
+
+# Internal documentation
+docs/hacktiv8-guide.md
+docs/internal/
+
+# OS files
+.DS_Store
