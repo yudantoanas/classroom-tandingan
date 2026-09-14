@@ -197,17 +197,3 @@ chmod +x scripts/repo-clone.sh
 ```
 
 All repositories will be cloned into `./cloned/output/<repo-name>-<batch-name>-<user>`. Existing directories will be skipped.
-
----
-
-## AI Coding Agent Guidelines & Skills
-
-This repository integrates guidelines and skills for AI coding agents (Claude Code, Antigravity, Cursor, Codex).
-
-* **Agent Instructions & Guardrails**: Detailed operating rules, safety constraints, credential protection, and script modification standards are specified in [AGENTS.md](AGENTS.md).
-* **Agent Skills (`.agents/skills/`)**: Skills installed and tracked in `skills-lock.json`:
-  * **`caveman`**: Ultra-compressed communication mode preserving token budgets while maintaining technical substance.
-  * **`grill-me`**: Relentless interactive interview protocol used by default to pressure-test plans and clarify ambiguity before execution.
-
-> [!IMPORTANT]
-> AI agents working in this repository must obtain explicit user confirmation before running live GitHub mutation scripts (`scripts/invite.sh`, `scripts/repo-create.sh`).
