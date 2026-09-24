@@ -5,7 +5,7 @@ output/
 runner_*.sh
 
 # Internal documentation
-docs/hacktiv8-guide.md
+docs/hacktiv8-guide*
 docs/internal/
 
 # OS files
